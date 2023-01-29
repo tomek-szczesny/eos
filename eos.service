@@ -1,0 +1,9 @@
+[Unit]
+Description=EOS, the LED daemon
+
+[Service]
+User=root
+ExecStart=/usr/local/sbin/eos
+
+[Install]
+WantedBy=local-fs.target
