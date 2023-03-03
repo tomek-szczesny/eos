@@ -16,7 +16,7 @@ const char * ir_event		= "/dev/input/by-path/platform-fdd70030.pwm-event";
 const string pwm_led_chip	= "/sys/class/pwm/pwmchip0";
 const string pwm_led_pwmnum	= "0";
 
-const long pwm_led_period	= 2e6;	// 1ms
+const long pwm_led_period	= 2e6;	// in nanoseconds
 
 #define LED_UP		20
 #define LED_DOWN	21
@@ -67,7 +67,7 @@ void init_led()
 	auto period = to_string(pwm_led_period);
 	auto path = pwm_led_chip + "/pwm" + pwm_led_pwmnum;
 
-	echo(pwm_led_chip + "/export", "pwm_led_pwmnum");
+	echo(pwm_led_chip + "/export", pwm_led_pwmnum);
 	echo(path + "/period", period);
 	echo(path + "/duty_cycle", period);
 	echo(path + "/polarity", "inversed");
