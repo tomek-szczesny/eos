@@ -16,7 +16,8 @@ const char * ir_event		= "/dev/input/by-path/platform-fdd70030.pwm-event";
 const string pwm_led_chip	= "/sys/class/pwm/pwmchip0";
 const string pwm_led_pwmnum	= "0";
 
-const long pwm_led_period	= 2e6;	// in nanoseconds
+const long pwm_led_period	= 4e6;	// in nanoseconds
+const long pwm_led_min		= 4300;	// minimum period setting
 
 #define LED_UP		20
 #define LED_DOWN	21
@@ -34,7 +35,7 @@ bool main_closing = 0;
 
 int ir_ev;		// IR event file descriptor
 
-float pwm_led		= 0.5;
+float pwm_led		= 0.2;
 bool led_on		= 1;
 bool led_flash		= 0;
 bool led_stable 	= 0;	// Can we slow down the loop?
@@ -77,25 +78,18 @@ void init_led()
 void update_led() {
 	// Correct the contents of led_pwm if doesn't make sense
 	if (pwm_led > 1) pwm_led = 1;
-	if (pwm_led < 0.15) pwm_led = 0.15;
+	if (pwm_led < 0.10) pwm_led = 0.10;
 
 
 	static float pwm = 0;
 	static long last_b = 0;
 	low_pass(&pwm, led_on ? pwm_led : 0, 15);
 
-	/*
-	const float g = 3.75;			// Algorithm from pistackmon, to be adjusted
-	float a;
-	a = 1 / (exp(g) - 1);
-	a *= exp(g*pwm) - 1;
-	a *= pwm_led_period;
-	a *= 0.5; 		// 50% power cap;
-	*/
 	float a;
 	a = pow(pwm,2.8);			// "gamma"
-	a *= pwm_led_period;
-	a *= 0.5; 		// 50% power cap;
+	a *= 0.5; 				// 50% power cap;
+	a *= (pwm_led_period - pwm_led_min);
+	a += pwm_led_min;
 
 	long b = floor(a);
 	if (led_flash)	echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/duty_cycle", to_string(pwm_led_period));
@@ -122,7 +116,7 @@ int fetch_ir()
 	if (read(ir_ev, &ev, sizeof ev) == 0) return -1;
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
-	case LED_ON:	led_flash = 0; pwm_led = 0.5; led_on = 1;	
+	case LED_ON:	led_flash = 0; pwm_led = 0.2; led_on = 1;	
 		break;
 	case LED_OFF:	led_flash = 0; led_on = 0;
 		break;
