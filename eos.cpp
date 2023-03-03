@@ -78,7 +78,7 @@ void init_led()
 void update_led() {
 	// Correct the contents of led_pwm if doesn't make sense
 	if (pwm_led > 1) pwm_led = 1;
-	if (pwm_led < 0.10) pwm_led = 0.10;
+	if (pwm_led < 0.05) pwm_led = 0.05;
 
 
 	static float pwm = 0;
@@ -89,7 +89,7 @@ void update_led() {
 	a = pow(pwm,2.8);			// "gamma"
 	a *= 0.5; 				// 50% power cap;
 	a *= (pwm_led_period - pwm_led_min);
-	a += pwm_led_min;
+	if (led_on) a += pwm_led_min;
 
 	long b = floor(a);
 	if (led_flash)	echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/duty_cycle", to_string(pwm_led_period));
@@ -116,25 +116,25 @@ int fetch_ir()
 	if (read(ir_ev, &ev, sizeof ev) == 0) return -1;
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
-	case LED_ON:	led_flash = 0; pwm_led = 0.2; led_on = 1;	
+	case LED_ON:	led_flash = 0; pwm_led = 0.2;	led_on = 1;	
 		break;
-	case LED_OFF:	led_flash = 0; led_on = 0;
+	case LED_OFF:	led_flash = 0; pwm_led = 0.2;	led_on = 0;
 		break;
-	case LED_UP:	led_flash = 0; pwm_led += 0.05;
+	case LED_UP:	led_flash = 0; pwm_led += 0.05;	led_on = 1;
 		break;
-	case LED_DOWN:	led_flash = 0; pwm_led -= 0.05;
+	case LED_DOWN:	led_flash = 0; pwm_led -= 0.05;	led_on = 1;
 		break;
-	case LED_25:	led_flash = 0; pwm_led = 0.25;
+	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;
 		break;
-	case LED_50:	led_flash = 0; pwm_led = 0.5;
+	case LED_50:	led_flash = 0; pwm_led = 0.5;	led_on = 1;
 		break;
-	case LED_75:	led_flash = 0; pwm_led = 0.75;
+	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;
 		break;
-	case LED_100:	led_flash = 0; pwm_led = 1;
+	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;
 		break;
 	case LED_AUTO:	// TODO - implement something if you want
 		break;
-	case LED_FLASH:	led_flash = 1;
+	case LED_FLASH:	led_flash = 1;	led_on = 1;
 		break;
 	}
 	return ev.value;
