@@ -182,7 +182,7 @@ int fetch_ir()
 		sleep_timer = 1;	
 		st_begin  = chrono::system_clock::now();
 		break;
-	case LED_FLASH:	led_flash = 1;	led_on = 1;	sleep_timer = 0;
+	case LED_FLASH:	led_flash = 1 - led_flash;	led_on = 1;	sleep_timer = 0;
 		break;
 	}
 	return ev.value;
