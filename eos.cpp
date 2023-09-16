@@ -19,6 +19,16 @@ const string pwm_led_pwmnum	= "0";
 const long pwm_led_period	= 4e6;	// in nanoseconds
 const long pwm_led_min		= 4300;	// minimum period setting
 
+// Sleep timer time constants (in seconds)
+const auto st_t1		= chrono::milliseconds(700);	// Acknowledge blink
+const auto st_t2		= chrono::seconds(10);		// Time before lights go out
+const auto st_t3		= chrono::seconds(8 * 3600);	// brightness ramp begins
+const auto st_t4		= chrono::seconds(int(9.5* 3600));	// st_pwmon is reached
+const auto st_t5		= chrono::seconds(10 * 3600);	// Automatically turns off lights and exits sleep timer mode
+// Sleep timer - other constants
+const float st_pwmon		= 0.5;		// brigtness after t4
+
+
 #define LED_UP		20
 #define LED_DOWN	21
 #define LED_OFF		22
@@ -27,7 +37,7 @@ const long pwm_led_min		= 4300;	// minimum period setting
 #define LED_50		17
 #define LED_75		18
 #define LED_100		19
-#define LED_AUTO	10
+#define LED_AUTO	10	// Sleep timer
 #define LED_FLASH	9
 
 // GLOBALS
@@ -39,6 +49,11 @@ float pwm_led		= 0.2;
 bool led_on		= 1;
 bool led_flash		= 0;
 bool led_stable 	= 0;	// Can we slow down the loop?
+
+
+bool sleep_timer	= 0;
+auto st_begin  = chrono::system_clock::now();
+
 
 void echo(const string path, const string input)
 	// Echoes data into a file
@@ -99,6 +114,37 @@ void update_led() {
 	last_b = b;
 }
 
+void do_sleep_timer() {
+	auto now = chrono::high_resolution_clock::now();
+	if (now - st_begin < st_t1) {
+		led_on = 1;
+		pwm_led = 0.4;
+		return;
+	}
+	if (now - st_begin < st_t2) {
+		led_on = 1;
+		pwm_led = 0.15;
+		return;
+	}
+	if (now - st_begin < st_t3) {
+		led_on = 0;
+		return;
+	}
+	if (now - st_begin < st_t4) {
+		float a = chrono::duration_cast<chrono::milliseconds>((now - st_begin) - st_t3).count();
+		float b = chrono::duration_cast<chrono::milliseconds>(st_t4 - st_t3).count();
+		pwm_led = (a/b) * st_pwmon;
+		led_on = 1;
+		return;
+	}
+	if (now - st_begin >= st_t5) {
+		pwm_led = 0.2;
+		led_on = 0;
+		sleep_timer = 0;
+		return;
+	}
+}
+
 void init_ir()
 {
 	echo(ir_protocols, "nec");
@@ -116,25 +162,27 @@ int fetch_ir()
 	if (read(ir_ev, &ev, sizeof ev) == 0) return -1;
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
-	case LED_ON:	led_flash = 0; pwm_led = 0.2;	led_on = 1;	
+	case LED_ON:	led_flash = 0; pwm_led = 0.2;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_OFF:	led_flash = 0; pwm_led = 0.2;	led_on = 0;
+	case LED_OFF:	led_flash = 0; pwm_led = 0.2;	led_on = 0;	sleep_timer = 0;
 		break;
-	case LED_UP:	led_flash = 0; pwm_led += 0.05;	led_on = 1;
+	case LED_UP:	led_flash = 0; pwm_led += 0.05;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_DOWN:	led_flash = 0; pwm_led -= 0.05;	led_on = 1;
+	case LED_DOWN:	led_flash = 0; pwm_led -= 0.05;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;
+	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_50:	led_flash = 0; pwm_led = 0.5;	led_on = 1;
+	case LED_50:	led_flash = 0; pwm_led = 0.5;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;
+	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;
+	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_AUTO:	// TODO - implement something if you want
+	case LED_AUTO:	// Sleep Timer
+		sleep_timer = 1;	
+		st_begin  = chrono::system_clock::now();
 		break;
-	case LED_FLASH:	led_flash = 1;	led_on = 1;
+	case LED_FLASH:	led_flash = 1;	led_on = 1;	sleep_timer = 0;
 		break;
 	}
 	return ev.value;
@@ -162,6 +210,7 @@ int main()
 	auto refresh_period = chrono::microseconds(20000);
 
 	while (!main_closing) {
+		if (sleep_timer) do_sleep_timer();
 		fetch_ir();
 		update_led();
 
