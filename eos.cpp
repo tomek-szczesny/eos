@@ -118,7 +118,7 @@ void do_sleep_timer() {
 	auto now = chrono::high_resolution_clock::now();
 	if (now - st_begin < st_t1) {
 		led_on = 1;
-		pwm_led = 0.4;
+		pwm_led = 0.5;
 		return;
 	}
 	if (now - st_begin < st_t2) {
@@ -159,7 +159,8 @@ int fetch_ir()
 	struct input_event ev;
 	int rd;
 
-	if (read(ir_ev, &ev, sizeof ev) == 0) return -1;
+	if (read(ir_ev, &ev, sizeof ev) <= 0) return -1;
+	//std::cout << "IR Event: " << ", " << ev.type << ", " << ev.code << ", " << ev.value << "\n";
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
 	case LED_ON:	led_flash = 0; pwm_led = 0.2;	led_on = 1;	sleep_timer = 0;
