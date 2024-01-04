@@ -16,17 +16,17 @@ const char * ir_event		= "/dev/input/by-path/platform-fdd70030.pwm-event";
 const string pwm_led_chip	= "/sys/class/pwm/pwmchip0";
 const string pwm_led_pwmnum	= "0";
 
-const long pwm_led_period	= 4e6;	// in nanoseconds
-const long pwm_led_min		= 4300;	// minimum period setting
+const long pwm_led_period	= 10e6;	// in nanoseconds
+const long pwm_led_min		= 4500;	// minimum period setting
 
 // Sleep timer time constants (in seconds)
 const auto st_t1		= chrono::milliseconds(700);	// Acknowledge blink
 const auto st_t2		= chrono::seconds(10);		// Time before lights go out
-const auto st_t3		= chrono::seconds(8 * 3600);	// brightness ramp begins
-const auto st_t4		= chrono::seconds(int(9.5* 3600));	// st_pwmon is reached
-const auto st_t5		= chrono::seconds(10 * 3600);	// Automatically turns off lights and exits sleep timer mode
+const auto st_t3		= chrono::seconds(int(9 * 3600));	// brightness ramp begins
+const auto st_t4		= chrono::seconds(int(10.5 * 3600));	// st_pwmon is reached
+const auto st_t5		= chrono::seconds(11 * 3600);	// Automatically turns off lights and exits sleep timer mode
 // Sleep timer - other constants
-const float st_pwmon		= 0.5;		// brigtness after t4
+const float st_pwmon		= 0.7;		// brigtness after t4
 
 
 #define LED_UP		20
@@ -39,6 +39,7 @@ const float st_pwmon		= 0.5;		// brigtness after t4
 #define LED_100		19
 #define LED_AUTO	10	// Sleep timer
 #define LED_FLASH	9
+
 
 // GLOBALS
 bool main_closing = 0;
