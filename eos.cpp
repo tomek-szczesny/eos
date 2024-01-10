@@ -29,16 +29,16 @@ const auto st_t5		= chrono::seconds(11 * 3600);	// Automatically turns off light
 const float st_pwmon		= 0.7;		// brigtness after t4
 
 
-#define LED_UP		20
-#define LED_DOWN	21
-#define LED_OFF		22
-#define LED_ON		23
-#define LED_25		16
-#define LED_50		17
-#define LED_75		18
-#define LED_100		19
-#define LED_AUTO	10	// Sleep timer
-#define LED_FLASH	9
+#define LED_UP		5
+#define LED_DOWN	4
+#define LED_OFF		6
+#define LED_ON		7
+#define LED_25		9
+#define LED_50		8
+#define LED_75		10
+#define LED_100		11
+#define LED_AUTO	19	// Sleep timer
+#define LED_FLASH	15
 
 
 // GLOBALS
@@ -184,7 +184,7 @@ int fetch_ir()
 		sleep_timer = 1;	
 		st_begin  = chrono::system_clock::now();
 		break;
-	case LED_FLASH:	led_flash = 1 - led_flash;	led_on = 1;	sleep_timer = 0;
+	case LED_FLASH:	led_flash = 1;			led_on = 1;	sleep_timer = 0;
 		break;
 	}
 	return ev.value;
