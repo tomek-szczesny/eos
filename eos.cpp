@@ -120,12 +120,12 @@ void do_sleep_timer() {
 	auto now = chrono::high_resolution_clock::now();
 	if (now - st_begin < st_t1) {
 		led_on = 1;
-		pwm_led = 0.5;
+		pwm_led = 0.4;
 		return;
 	}
 	if (now - st_begin < st_t2) {
 		led_on = 1;
-		pwm_led = 0.15;
+		pwm_led = 0.05;
 		return;
 	}
 	if (now - st_begin < st_t3) {
@@ -170,19 +170,19 @@ int fetch_ir()
 	//std::cout << "IR Event: " << ", " << ev.type << ", " << ev.code << ", " << ev.value << "\n";
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
-	case LED_ON:	led_flash = 0; pwm_led = 0.2;	led_on = 1;	sleep_timer = 0;
+	case LED_ON:	led_flash = 0; pwm_led = 0.3;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_OFF:	led_flash = 0; pwm_led = 0.2;	led_on = 0;	sleep_timer = 0;
+	case LED_OFF:	led_flash = 0; pwm_led = 0.3;	led_on = 0;	sleep_timer = 0;
 		break;
 	case LED_UP:	led_flash = 0; pwm_led += 0.05;	led_on = 1;	sleep_timer = 0;
 		break;
 	case LED_DOWN:	led_flash = 0; pwm_led -= 0.05;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;	sleep_timer = 0;
+	case LED_25:	led_flash = 0; pwm_led = 0.05;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_50:	led_flash = 0; pwm_led = 0.5;	led_on = 1;	sleep_timer = 0;
+	case LED_50:	led_flash = 0; pwm_led = 0.33;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;	sleep_timer = 0;
+	case LED_75:	led_flash = 0; pwm_led = 0.66;	led_on = 1;	sleep_timer = 0;
 		break;
 	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;	sleep_timer = 0;
 		break;
