@@ -22,11 +22,12 @@ const long pwm_led_min		= 4500;	// minimum period setting
 // Sleep timer time constants (in seconds)
 const auto st_t1		= chrono::milliseconds(700);	// Acknowledge blink
 const auto st_t2		= chrono::seconds(10);		// Time before lights go out
-const auto st_t3		= chrono::seconds(int(9 * 3600));	// brightness ramp begins
-const auto st_t4		= chrono::seconds(int(10.5 * 3600));	// st_pwmon is reached
-const auto st_t5		= chrono::seconds(11 * 3600);	// Automatically turns off lights and exits sleep timer mode
+const auto st_t3		= chrono::seconds(int(7 * 3600));	// dawn - minimum brightness
+const auto st_t4		= chrono::seconds(int(8 * 3600));	// brightness ramp begins
+const auto st_t5		= chrono::seconds(int(10 * 3600));	// st_pwmon is reached
+const auto st_t6		= chrono::seconds(11 * 3600);	// Automatically turns off lights and exits sleep timer mode
 // Sleep timer - other constants
-const float st_pwmon		= 0.7;		// brigtness after t4
+const float st_pwmon		= 0.7;		// brigtness after t5
 
 
 #define LED_UP		5
@@ -132,13 +133,18 @@ void do_sleep_timer() {
 		return;
 	}
 	if (now - st_begin < st_t4) {
+		led_on = 1;
+		pwm_led = 0.05;
+		return;
+	}
+	if (now - st_begin < st_t5) {
 		float a = chrono::duration_cast<chrono::milliseconds>((now - st_begin) - st_t3).count();
 		float b = chrono::duration_cast<chrono::milliseconds>(st_t4 - st_t3).count();
 		pwm_led = (a/b) * st_pwmon;
 		led_on = 1;
 		return;
 	}
-	if (now - st_begin >= st_t5) {
+	if (now - st_begin >= st_t6) {
 		pwm_led = 0.2;
 		led_on = 0;
 		sleep_timer = 0;
