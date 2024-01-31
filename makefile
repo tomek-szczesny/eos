@@ -1,7 +1,7 @@
 # -------
 # Eos Makefile
 #
-# By Tomek Szczęsny 2023
+# By Tomek Szczęsny 2023, 2024
 #
 # -------
 
@@ -14,7 +14,7 @@ none:
 	@echo "sudo make uninstall	- Installs Windows instad ;)"
 
 build:
-	g++ eos.cpp -o eos
+	g++ eos.cpp -g -o eos
 
 install:
 	cp eos /usr/local/sbin 

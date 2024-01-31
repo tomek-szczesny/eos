@@ -19,10 +19,10 @@ const string pwm_led_pwmnum	= "0";
 // Variable PWM period
 // Prefers max LED period
 // If duty_cycle falls below pwm_led_min, period is increased
-const long pwm_led_period_min	= 10e6;	// in nanoseconds
+const long pwm_led_period_min	= 20e6;	// in nanoseconds
 const long pwm_led_period_max	= 2e6;	// in nanoseconds
 const long pwm_led_min		= 5000;	// minimum dc setting
-const double pwm_led_dc_min	= double(pwm_led_min) / double(pwm_led_period_max);
+const double pwm_led_dc_min	= double(pwm_led_min) / double(pwm_led_period_min);
 
 // Sleep timer time constants (in seconds)
 const auto st_t1		= chrono::milliseconds(700);	// Acknowledge blink
@@ -92,7 +92,7 @@ void init_led()
 
 	echo(pwm_led_chip + "/export", pwm_led_pwmnum);
 	echo(path + "/period", period);
-	echo(path + "/duty_cycle", 0);
+	echo(path + "/duty_cycle", "0");
 	echo(path + "/polarity", "inversed");
 	echo(path + "/enable", "1");
 }
@@ -123,7 +123,8 @@ void update_led() {
 	if (prd > pwm_led_period_min)	dc = 0;	// Should happen when LEDs dim down to 0%
 
 
-			echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/period", to_string(prd);
+	std::cout << "prd: " << prd << ", dc:" << dc << "\n";
+			echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/period", to_string(prd));
 	if (led_flash)	echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/duty_cycle", to_string(prd));
 	else 		echo(pwm_led_chip + "/pwm" + pwm_led_pwmnum + "/duty_cycle", to_string(dc));
 
@@ -149,7 +150,7 @@ void do_sleep_timer() {
 	}
 	if (now - st_begin < st_t4) {
 		led_on = 1;
-		pwm_led = 0.01;
+		pwm_led = 0.00;
 		return;
 	}
 	if (now - st_begin < st_t5) {
@@ -189,15 +190,15 @@ int fetch_ir()
 		break;
 	case LED_OFF:	led_flash = 0; pwm_led = 0.3;	led_on = 0;	sleep_timer = 0;
 		break;
-	case LED_UP:	led_flash = 0; pwm_led += 0.04;	led_on = 1;	sleep_timer = 0;
+	case LED_UP:	led_flash = 0; pwm_led += 0.02;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_DOWN:	led_flash = 0; pwm_led -= 0.04;	led_on = 1;	sleep_timer = 0;
+	case LED_DOWN:	led_flash = 0; pwm_led -= 0.02;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_25:	led_flash = 0; pwm_led = 0.01;	led_on = 1;	sleep_timer = 0;
+	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_50:	led_flash = 0; pwm_led = 0.33;	led_on = 1;	sleep_timer = 0;
+	case LED_50:	led_flash = 0; pwm_led = 0.50;	led_on = 1;	sleep_timer = 0;
 		break;
-	case LED_75:	led_flash = 0; pwm_led = 0.66;	led_on = 1;	sleep_timer = 0;
+	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;	sleep_timer = 0;
 		break;
 	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;	sleep_timer = 0;
 		break;
