@@ -154,8 +154,8 @@ void do_sleep_timer() {
 		return;
 	}
 	if (now - st_begin < st_t5) {
-		float a = chrono::duration_cast<chrono::milliseconds>((now - st_begin) - st_t3).count();
-		float b = chrono::duration_cast<chrono::milliseconds>(st_t4 - st_t3).count();
+		float a = chrono::duration_cast<chrono::milliseconds>((now - st_begin) - st_t4).count();
+		float b = chrono::duration_cast<chrono::milliseconds>(st_t5 - st_t4).count();
 		pwm_led = (a/b) * st_pwmon;
 		led_on = 1;
 		return;
