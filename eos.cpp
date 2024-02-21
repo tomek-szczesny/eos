@@ -1,6 +1,7 @@
 #include <linux/input.h>
 #include <chrono>
 #include <cmath>
+#include <ctime>
 #include <fcntl.h>
 #include <iostream>
 #include <bits/stdc++.h>
@@ -24,16 +25,14 @@ const long pwm_led_period_max	= 2e6;	// in nanoseconds
 const long pwm_led_min		= 5000;	// minimum dc setting
 const double pwm_led_dc_min	= double(pwm_led_min) / double(pwm_led_period_min);
 
-// Sleep timer time constants (in seconds)
-const auto st_t1		= chrono::milliseconds(700);	// Acknowledge blink
-const auto st_t2		= chrono::seconds(10);		// Time before lights go out
-const auto st_t3		= chrono::seconds(int(7 * 3600));	// dawn - minimum brightness
-const auto st_t4		= chrono::seconds(int(8 * 3600));	// brightness ramp begins
-const auto st_t5		= chrono::seconds(int(10 * 3600));	// st_pwmon is reached
-const auto st_t6		= chrono::seconds(11 * 3600);	// Automatically turns off lights and exits sleep timer mode
-// Sleep timer - other constants
-const float st_pwmon		= 0.7;		// brigtness after t5
+// Auto Mode constants
+const float dawn		= 4;
+const float sunrise		= 6;
+const float autooff		= 7;
+const float sunset		= 18;
+const float dusk		= 20;
 
+const float sunrise_pwm		= 0.6;
 
 #define LED_UP		5
 #define LED_DOWN	4
@@ -43,7 +42,7 @@ const float st_pwmon		= 0.7;		// brigtness after t5
 #define LED_50		8
 #define LED_75		10
 #define LED_100		11
-#define LED_AUTO	19	// Sleep timer
+#define LED_AUTO	19	// Auto Mode
 #define LED_FLASH	15
 
 
@@ -56,10 +55,12 @@ float pwm_led		= 0.2;
 bool led_on		= 1;
 bool led_flash		= 0;
 bool led_stable 	= 0;	// Can we slow down the loop?
+bool auto_mode	= 0;
+float sunset_pwm = 0.3;
 
-
-bool sleep_timer	= 0;
-auto st_begin  = chrono::system_clock::now();
+// hr() variables
+std::time_t t = std::time(0);   // get time now
+std::tm* now = std::localtime(&t);
 
 
 void echo(const string path, const string input)
@@ -83,6 +84,15 @@ void low_pass(float * var, float input, float a)
 {
 	a = 1 - exp(-1/a);
 	*var = (a * input) + ((1-a) * *var);
+}
+
+// Get current time in hours (float)
+float hr() {
+    t = std::time(0);   // get time now
+    float a = now->tm_hour;
+    a += float(now->tm_min)/60;
+    a += float(now->tm_sec)/3600;
+    return a;
 }
 
 void init_led()
@@ -132,38 +142,34 @@ void update_led() {
 	last_dc = float(dc) / float(prd);
 }
 
-void do_sleep_timer() {
-	auto now = chrono::high_resolution_clock::now();
-	if (now - st_begin < st_t1) {
-		led_on = 1;
-		pwm_led = 0.4;
+void do_auto_mode() {
+	float now = hr();
+	if (now < dawn) {
+		led_on = 0;
+		pwm_led = 0;
 		return;
 	}
-	if (now - st_begin < st_t2) {
+	if (now > dawn && now < sunrise) {
 		led_on = 1;
-		pwm_led = 0.01;
+		pwm_led = sunrise_pwm * (now - dawn) / (sunrise - dawn);
 		return;
 	}
-	if (now - st_begin < st_t3) {
+	if (now > sunrise  && now < autooff) {
+		led_on = 1;
+		pwm_led = sunrise_pwm;
+		return;
+	}
+	if (now > autooff && now < autooff+1) {
 		led_on = 0;
 		return;
 	}
-	if (now - st_begin < st_t4) {
+	if (now > sunset && now < dusk) {
 		led_on = 1;
-		pwm_led = 0.00;
+		pwm_led = sunset_pwm * (1 - ((now - sunset) / (dusk - sunset)));
 		return;
 	}
-	if (now - st_begin < st_t5) {
-		float a = chrono::duration_cast<chrono::milliseconds>((now - st_begin) - st_t4).count();
-		float b = chrono::duration_cast<chrono::milliseconds>(st_t5 - st_t4).count();
-		pwm_led = (a/b) * st_pwmon;
-		led_on = 1;
-		return;
-	}
-	if (now - st_begin >= st_t6) {
-		pwm_led = 0.2;
+	if (now > dusk) {
 		led_on = 0;
-		sleep_timer = 0;
 		return;
 	}
 }
@@ -186,30 +192,32 @@ int fetch_ir()
 	//std::cout << "IR Event: " << ", " << ev.type << ", " << ev.code << ", " << ev.value << "\n";
 	if (ev.value == 0) return -1;
 	switch (ev.value) {
-	case LED_ON:	led_flash = 0; pwm_led = 0.3;	led_on = 1;	sleep_timer = 0;
+	case LED_ON:	led_flash = 0; pwm_led = 0.3;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_OFF:	led_flash = 0; pwm_led = 0.3;	led_on = 0;	sleep_timer = 0;
+	case LED_OFF:	led_flash = 0; pwm_led = 0.3;	led_on = 0;	auto_mode = 0;
 		break;
-	case LED_UP:	led_flash = 0; pwm_led += 0.02;	led_on = 1;	sleep_timer = 0;
+	case LED_UP:	led_flash = 0; pwm_led += 0.02;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_DOWN:	led_flash = 0; pwm_led -= 0.02;	led_on = 1;	sleep_timer = 0;
+	case LED_DOWN:	led_flash = 0; pwm_led -= 0.02;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;	sleep_timer = 0;
+	case LED_25:	led_flash = 0; pwm_led = 0.25;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_50:	led_flash = 0; pwm_led = 0.50;	led_on = 1;	sleep_timer = 0;
+	case LED_50:	led_flash = 0; pwm_led = 0.50;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;	sleep_timer = 0;
+	case LED_75:	led_flash = 0; pwm_led = 0.75;	led_on = 1;	auto_mode = 0;
 		break;
-	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;	sleep_timer = 0;
+	case LED_100:	led_flash = 0; pwm_led = 1;	led_on = 1;	auto_mode = 0;
 		break;
 	case LED_AUTO:	// Sleep Timer
-		sleep_timer = 1;	
-		st_begin  = chrono::system_clock::now();
+		led_flash = 0;
+		led_on = 1;
+		sunset_pwm = pwm_led; if (sunset_pwm < 0.2) sunset_pwm = 0.2;
+		auto_mode = 1;	
 		break;
-	case LED_FLASH:	led_flash = 1;			led_on = 1;	sleep_timer = 0;
+	case LED_FLASH:	led_flash = 1;			led_on = 1;	auto_mode = 0;
 		break;
 			// Any other button turns on dim light
-	default:	led_flash = 0; pwm_led = 0.01;	led_on = 1;	sleep_timer = 0;
+	default:	led_flash = 0; pwm_led = 0.01;	led_on = 1;	auto_mode = 0;
 		break;
 	}
 	return ev.value;
@@ -237,13 +245,13 @@ int main()
 	auto refresh_period = chrono::microseconds(20000);
 
 	while (!main_closing) {
-		if (sleep_timer) do_sleep_timer();
 		fetch_ir();
+		if (auto_mode) do_auto_mode();
 		update_led();
 
 		//  -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
 
-		refresh_period = chrono::microseconds(led_stable ? 100000 : 20000);
+		refresh_period = chrono::microseconds(led_stable ? 50000 : 20000);
 		next_refresh += refresh_period;
 		// Catch up if this thread is running really late
 		// Happens if daemon launches before SBC updates real time clock
