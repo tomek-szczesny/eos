@@ -89,6 +89,7 @@ void low_pass(float * var, float input, float a)
 // Get current time in hours (float)
 float hr() {
     t = std::time(0);   // get time now
+    now = std::localtime(&t);
     float a = now->tm_hour;
     a += float(now->tm_min)/60;
     a += float(now->tm_sec)/3600;
@@ -144,6 +145,7 @@ void update_led() {
 
 void do_auto_mode() {
 	float now = hr();
+	std::cout << "hr: " << now << "\n";
 	if (now < dawn) {
 		led_on = 0;
 		pwm_led = 0;
